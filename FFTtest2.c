@@ -140,7 +140,7 @@ double * reverse1(double value[], int length)
 }
 
 
-//计算2点DFT
+//计算2点DFT!
 col * dft()
 {
 	col dftX[2] = { 0 };
