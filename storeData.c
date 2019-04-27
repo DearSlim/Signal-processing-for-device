@@ -6,16 +6,23 @@
 #include "math.h"
 #include "signalProcessing.h"
 
+//Array for storing time data. It won't be used in FFT, but further application can be made if necessary.
 double time[1024];
+//Array for storing signal value for FFT.
 double value[1024];
+//Process deals 1024 characters at first, then replace the array characters 32 elements each time. This is for storing the original data
 double savedValue[1024];
 
+//Size of the data processed by program each time.
 int dataSize = 1024;
+//For storing the value or time temporarily.
 char buffer[1024];
 int count;
+//Count number of time elements stored in array
 int countTime = 0;
+//Count number of value elements stored in array
 int countValue = 0;
-
+//Check whether it's the first loop(datasize=1024) or not.(datasize=32)
 int markRealTime = 0;
 
 /**
@@ -34,11 +41,12 @@ double * moveLength(double a[], double b[], int length, int distance)
 		}
 		for (int i = 0; i < distance; i++)
 		{
-			pt[i] = b[i];
+			pt[i] = b[distance-1-i];
 		}
 		return pt;
 }
 
+//This function gets the incoming original data from device and remove or replace all unnecessary characters for further process.
 char * processData(char a[1024])
 {
 	int count = 0;
@@ -51,16 +59,16 @@ char * processData(char a[1024])
 
 	for (int t = 0; t < ArrayDataLength; t++)
 	{
-			//小于58去除字母，40和41为(),13和10为CR,LF
+			//smaller than 58 to eliminate alphabet，40 and 41 means(),13 and 10 are CR,LF
 			if (a[t] < 58 && a[t] != 40 && a[t] != 41 && a[t] != 13 && a[t] != 35)
 			{
-				//换行符LF表示新一行数据的开始,用"表示
+				//LF signs a new line, replace it with " for further process 
 				if (a[t] == 10)//LF
 				{
 					*(data + count) = 34;//"
 					//printf("%c", *(data + count));
 				}
-				//空格符为时间和数据的间隔，用&区分时间和数据用于进一步处理
+				//Spacebar seperates time and value, replace it with "&" for further process
 				else if (a[t] == 32)//空格
 				{
 					*(data + count) = 45;//&
@@ -68,25 +76,27 @@ char * processData(char a[1024])
 				}
 				else if (a[t] == 44)
 				{
-					*(data + count) = '.';//逗号换成小数点
+					*(data + count) = '.';//Replace , with .
 					//printf("%c", *(data + count));
 				}
-				//排除以上情况则为有效数字
+				//Exceptions are claimed, the rest of characters are numbers
 				else
 				{
 					*(data + count) = a[t];
 					//printf("%c", *(data + count));
 				}
-				count = count + 1;
+				count ++;
 			}
 	}
 	return data;
 }
 
-//time：从/后一位开始，到"前一位结束； value:从"后一位开始，到/前一位结束
+//This function gets the plain text from processData() and store time & value.
 int distinguishTime_Value(char *data)
 {
+	//Storing data temporarily.
 	char * stat = (char*) calloc(dataSize, sizeof(char));
+	//initialize the array
 	for (int i = 0; i < dataSize; i++)
 	{ 
 		stat[i] = '\0';
@@ -97,7 +107,8 @@ int distinguishTime_Value(char *data)
 	}
 	int countStat = 0;
 	int markFinish = 1;
-	for (int i = 0; i < dataSize; i++)
+	//Process the text
+	for (int i = 0; i < 1024; i++)
 	{
 		if (countTime == dataSize-1)
 		{
@@ -105,23 +116,22 @@ int distinguishTime_Value(char *data)
 		}
 		if (countValue == dataSize - 1 && markRealTime == 0)
 		{
-			for (int i = 0; i < dataSize; i++)
+			for (int t = 0; t < dataSize; t++)
 			{
-				savedValue[i] = value[i];
-				FFT3(value, 1024);
-				countValue = 0;
-				dataSize = 32;
-				markRealTime = 1;
+				savedValue[t] = value[t];
 			}
-
+			countValue = 0;
+			dataSize = 32;
+			markRealTime = 1;
+			FFT3(value, 1024);
 		}
 		//Every 1024 data would be put into a FFT
 		if (countValue == dataSize-1 && markRealTime==1)
 		{
-			double * pt = moveLength(savedValue, value, dataSize, 32);
-			for (int i = 0; i < dataSize; i++)
+			double * pt = moveLength(savedValue, value, 1024, 32);
+			for (int t = 0; t < dataSize; t++)
 			{
-				savedValue[i] = pt[i];
+				savedValue[t] = pt[t];
 			}
 			FFT3(pt, 1024);
 			countValue = 0;
@@ -129,7 +139,7 @@ int distinguishTime_Value(char *data)
 
 
 		//Word processing
-		if (i == dataSize-1 && *(data + i) != 45 && *(data + i) != 34 && *(data + i) != 13 && *(data + i) != 10 && markFinish == 0)
+		if (i == 1023 && *(data + i) != 45 && *(data + i) != 34 && *(data + i) != 13 && *(data + i) != 10 && markFinish == 0)
 		{
 			//printf("(%c)", *(data + i));
 			if (*(data + i) != '\0')
@@ -137,7 +147,7 @@ int distinguishTime_Value(char *data)
 				//printf("+");
 				//printf("%c", *(data + i));
 				stat[countStat] = *(data + i);
-				countStat = countStat + 1;
+				countStat++;
 			}
 			for (int n = 0; n < countStat; n++)
 			{
@@ -147,7 +157,7 @@ int distinguishTime_Value(char *data)
 				//printf(" stored to buffer\n");
 			count = countStat;
 		}
-		else if (i == dataSize-1 && (*(data + i) == 45 || *(data + i) == 34))
+		else if (i == 1023 && (*(data + i) == 45 || *(data + i) == 34))
 		{
 			if (*(data + i) == 45)
 			{
@@ -163,11 +173,11 @@ int distinguishTime_Value(char *data)
 				countStat = 0;
 				markFinish = 1;
 			}
-			//"号表示新一行开始
+			//"means a new line
 			else if (*(data + i) == 34)
 			{
 				value[countValue] = atof(stat) *5/4096;
-				printf("-Value: %f\n", value[countValue]);
+				//printf("%f\n", value[countValue]);
 				countValue = countValue + 1;
 				//printf("valueCount:%d\n", countValue);
 				for (int i = 0; i < dataSize; i++)
@@ -208,11 +218,11 @@ int distinguishTime_Value(char *data)
 				countStat = 0;
 				markFinish = 1;
 			}
-			//"号表示新一行开始
+			// "means a new line
 			else if (*(data + i) == 34)
 			{
 				value[countValue] = atof(stat) *5/4096;
-				printf("-Value: %f\n", value[countValue]);
+				//printf("%f\n", value[countValue]);
 				countValue = countValue + 1;
 				//printf("valueCount:%d\n", countValue);
 				for (int i = 0; i < dataSize; i++)
@@ -235,12 +245,12 @@ int distinguishTime_Value(char *data)
 		{
 			if (*(data + i) != 13 && *(data + i) != 10)
 			{
-				//时间和数据的间隔
+				//Gap between time and value
 				if (*(data + i) == 45)
 				{
 					//countStat为0则没有数据录入
 						time[countTime] = atof(stat);
-						//printf("-Time: %f", time[countTime]);
+						//printf("%f", time[countTime]);
 						countTime = countTime + 1;
 						//printf("timeCount:%d", countTime);
 						for (int i = 0; i < dataSize; i++)
@@ -250,11 +260,11 @@ int distinguishTime_Value(char *data)
 						countStat = 0;
 						markFinish = 1;
 				}
-				//"号表示新一行开始
+				//" means a new line
 				else if (*(data + i) == 34)
 				{
 						value[countValue] = atof(stat) * 5 / 4096;
-						printf("-Value: %f\n", value[countValue]);
+						//printf("%f\n", value[countValue]);
 						countValue = countValue + 1;
 						//printf("valueCount:%d\n", countValue);
 						for (int i = 0; i < dataSize; i++)
@@ -264,6 +274,7 @@ int distinguishTime_Value(char *data)
 						countStat = 0;
 						markFinish = 1;
 				}
+				// Count number into buffer
 				else
 				{
 					//printf("+");
@@ -276,5 +287,10 @@ int distinguishTime_Value(char *data)
 		}
 	}
 	//printf("  -buffer end\n");
+
+	free(data);
+	free(stat);
+	data = NULL;
+	stat = NULL;
 	return 0;
 }

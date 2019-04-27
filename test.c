@@ -117,3 +117,15 @@ int main()
 //	
 //	return 0;
 //}
+
+////Show frequency
+//int main(void)
+//{
+//	
+//	for (int i = 0; i < 1024; i++)
+//	{
+//		double b = i;
+//		printf("%d, %f\n", i, 20 * b / 1024);
+//	}
+//	return 0;
+//}

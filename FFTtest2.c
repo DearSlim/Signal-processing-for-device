@@ -1,6 +1,7 @@
 #include "signalProcessing.h"
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 col calculateWN(int k, int n)
 {
@@ -110,37 +111,37 @@ int reverse()
 }
 
 //real time use
-double * reverse1(double value[], int length)
+double * reverse1(double original[], int length)
 {
-	int half, m, p, j = 0;
+	int half, m, j = 0;
 	double t;
-	half = length / 2;                   //变址运算，即把自然顺序变成倒位序，采用雷德算法
+	half = length / 2;                   //Inverse function by rader algorithm
 	m = length - 1;
 	for (int p = 0; p < m; p++)
 	{
-		if (p < j)                      //如果i<j,即进行变址
+		if (p < j)                      //Change address when i<j
 		{
-			t = value[j];
-			value[j] = value[p];
-			value[p] = t;
+			t = original[j];
+			original[j] = original[p];
+			original[p] = t;
 		}
-		int k = half;                       //求j的下一个倒位序
-		while (k <= j)                 //如果k<=j,表示j的最高位为1   
+		int k = half;                       //Next inverse sequence
+		while (k <= j)                 //If k<=j,mark the highest position as 1   
 		{
-			j = j - k;                 //把最高位变成0
+			j = j - k;                 //Change the highest position into 0
 			k = k / 2;                 //k/2，比较次高位，依次类推，逐个比较，直到某个位为0
 		}
 		j = j + k;                     //把0改为1
 	}
 	for (int p = 0; p < 64; p++)
 	{
-		printf("%f\n", value[p]);
+		//printf("%f\n", value[p]);
 	}
-	return value;
+	return original;
 }
 
 
-//计算2点DFT!
+//计算2点DFT
 col * dft()
 {
 	col dftX[2] = { 0 };
@@ -171,15 +172,15 @@ col * dft()
 }
 
 //realtime processing
-col * dft1(double value[],int length)
+col * dft1(double original1[],int length)
 {
-	col *result = (col*)malloc(length * sizeof(col));
+	col *result = (col*)calloc(length, sizeof(col));
 	col dftX[2] = { 0 };
 	col y[2];
 	for (int j = 0; j < length/2; j++)
 	{
-		y[0].real =value[2 * j];
-		y[1].real =value[2*j+1];
+		y[0].real = original1[2 * j];
+		y[1].real = original1[2*j+1];
 		y[0].img = y[1].img = 0;
 		for (int k = 0; k < 2; k++)
 		{
@@ -296,9 +297,9 @@ int FFT2()
 
 	//Test correlation coefficient
 	double * d1 = setTest1();
-	calculateKORREL(amplitude, d1, 64);
+	calculateCORREL(amplitude, d1, 64);
 
-
+	//Display result
 	for (int i = 0; i < 64; i++)
 	{
 		printf("%f\n", /**frequency[i]**/amplitude[i]);
@@ -309,33 +310,36 @@ int FFT2()
 //For realtime processing
 int FFT3(double value[], int length)
 {
-	col *fftResult = (col*)malloc(length * sizeof(col));
-	col *xtemp = (col*)malloc(length*sizeof(col));
-	double *pt = reverse1(value, length);
+	//For storing results
+	col *fftResult = (col*)calloc(length , sizeof(col));
+	//For doing calculation
+	col *xtemp = (col*)calloc(length, sizeof(col));
+	//Make reverse sequence
+	double * pt = reverse1(value, length);
 	for (int i = 0; i < length; i++)
 	{
-		value[i] = *(pt + i);
+		value[i] = pt[i];
 	}
-	//计算第一级的2点DFT
+	//2 points DFT
 	col *pt1 = dft1(value, length);
 	for (int i = 0; i < length; i++)
 	{
-		fftResult[i] = *(pt1 + i);
+		fftResult[i] = pt1[i];
 	};
-	//设置一个相同大小的数组用于存放x[]原始数据
+	//xtemp is for storing the data of the last series of calculation temporarily.
 	for (int i = 0; i < length; i++)
 	{
 		xtemp[i].real = fftResult[i].real;
 		xtemp[i].img = fftResult[i].img;
 	}
-	//一共log2N级运算
-	int *mark = (int*)malloc(length * sizeof(int));
+	//log2N level of calculations in total
+	int *mark = (int*)calloc(length, sizeof(int));
 	for (int m = 1; m < log(length)/log(2); m++)
 	{
 		reset(mark, length, 1);
-		//记录每级蝶形的旋转因子变化周期，第L级运算周期为L；
+		//Mrark the loop of twirl factor
 		int markLoop = 0;
-		//节点距离
+		//Distance between nodes
 		int distance = pow(2, m);
 		for (int p = 0; p < length; p++)
 		{
@@ -347,7 +351,6 @@ int FFT3(double value[], int length)
 			{
 				if (markLoop < distance)
 				{
-					//col wnk = calculateWN((p*pow(2,(log2N-m+1))), N);
 					double k = markLoop * length / pow(2, (m + 1));
 					col wnk = calculateWN(k, length);
 					fftResult[p] = add(xtemp[p], mul(wnk, xtemp[p + distance]));
@@ -368,6 +371,7 @@ int FFT3(double value[], int length)
 			}
 		}
 		reset(mark, length, 1);
+		//Temporarily store the results into xtemp
 		for (int i = 0; i < length; i++)
 		{
 			//printf("%f+j%f\n", x[i].real, x[i].img);
@@ -378,20 +382,18 @@ int FFT3(double value[], int length)
 
 
 	//Transform the result into frequency and amplitude
-	double * frequency = (double*)malloc(length*sizeof(double));
-	double * amplitude = (double*)malloc(length*sizeof(double));
+	double * frequency = (double*)calloc(length, sizeof(double));
+	double * amplitude = (double*)calloc(length, sizeof(double));
 	if (frequency == NULL || amplitude == NULL)
 	{
 		exit(1);
 	}
-	//memset(frequency, 0, length*sizeof(double));
-	//memset(amplitude, 0, length * sizeof(double));
 
 	for (int i = 0; i < length; i++)
 	{
 		//Frequency calculation
 		double i1 = i;
-		frequency[i] = 20 * i1 / length;
+		*(frequency+i) = 20 * i1 / length;
 		//Amplitude calculation
 		if (i == 0 || i == 31)
 		{
@@ -404,15 +406,68 @@ int FFT3(double value[], int length)
 			amplitude[i] = 2 * sqrt(a) / length;
 		}
 	}
-	for (int i = 0; i < length; i++)
+
+
+	////Display FFT result 
+	//for (int j = 0; j < length; j++)
+	//{
+	//	printf("%f     %f\n", frequency[j], amplitude[j]);
+	//}
+
+
+	/**Correlation coefficient calculation,
+	if the signal wave shows a correlation coefficient with the monitored signal of 0.7 or larger, 
+	a warning message would occur.**/
+	double * ideal = Variaresp_AB_effort();
+	double * amplitude1 = processAmp(amplitude, length);
+	double a2[52];
+	double a3[52];
+	
+	for (int i = 0; i < 52; i++)
 	{
-		printf("%f     %f\n", frequency[i], amplitude[i]);
+		a2[i] = amplitude1[i];
+		a3[i] = ideal[2 * i + 1];
 	}
-	printf("||||||||||Process end\n");
+	double CorrelResult = calculateCORREL(a2,a3,52);
+	//Insert reaction here
+	if (CorrelResult >= 0.7)
+	{
+		printf("Warning, the breath rate is too fast. Correlation cofficient is: %s\n",CorrelResult);
+	}
+
+
+	//Display result of processed data
+	double hz[52];
+	for (int i = 0; i < 52; i++)
+	{
+		double b = i;
+		hz[i]=b * 20 / 1024;
+	}
+	for (int j = 0; j < 52; j++)
+	{
+		printf("%f     %f\n", hz[j], a2[j]);
+	}
+
+
 	//Release resourse
-	//free(frequency);
-	//free(amplitude);
-	//frequency = 0;
-	//amplitude = 0;
+	free(mark);
+	free(ideal);
+	free(amplitude1);
+	free(frequency);
+	free(amplitude);
+	free(pt1);
+	free(xtemp);
+	free(fftResult);
+	mark = NULL;
+	ideal = NULL;
+	frequency = NULL;
+	amplitude = NULL;
+	amplitude1 = NULL;
+	pt = NULL;
+	pt1 = NULL;
+	value = NULL;
+	xtemp = NULL;
+	fftResult = NULL;
+	xtemp = NULL;
 	return 0;
 } 

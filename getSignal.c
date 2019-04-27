@@ -61,7 +61,7 @@ bool ComRead(HANDLE hCom, unsigned char buf[16], int len)
 		ReadLen = (cs.cbInQue > len) ? len : cs.cbInQue;
 		if (ReadLen > 0)
 		{
-			//由于之前等待时以读取一个字节，所欲buf+1
+			//由于之前等待时以读取一个字节，故buf+1
 			rtn = ReadFile(hCom, buf + 1, ReadLen, &ReadSize, NULL);
 			len = 0;
 			if (rtn)
