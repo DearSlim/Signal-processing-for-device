@@ -11,7 +11,7 @@ col calculateWN(int k, int n)
 	return c;
 }
 
-/*复数加法*/
+/*Complex addition*/
 col add(col a, col b)
 {
 	col c;
@@ -20,7 +20,7 @@ col add(col a, col b)
 	return c;
 }
 
-/*复数减法*/
+/*Complex subtraction*/
 col sub(col a, col b)
 {
 	col c;
@@ -29,7 +29,7 @@ col sub(col a, col b)
 	return c;
 }
 
-/*复数乘法*/
+/*Complex multiplication*/
 col mul(col a, col b)
 {
 	col c;
