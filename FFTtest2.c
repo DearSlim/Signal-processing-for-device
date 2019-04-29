@@ -422,18 +422,54 @@ int FFT3(double value[], int length)
 	double * amplitude1 = processAmp(amplitude, length);
 	double a2[52];
 	double a3[52];
-	
 	for (int i = 0; i < 52; i++)
 	{
 		a2[i] = amplitude1[i];
 		a3[i] = ideal[2 * i + 1];
 	}
-	double CorrelResult = calculateCORREL(a2,a3,52);
-	//Insert reaction here
-	if (CorrelResult >= 0.7)
+	double CorrelResult1 = calculateCORREL(a2,a3,52);
+
+	*ideal = AS_recupEffort();
+	for (int i = 0; i < 52; i++)
 	{
-		printf("Warning, the breath rate is too fast. Correlation cofficient is: %s\n",CorrelResult);
+		a3[i] = ideal[2 * i + 1];
 	}
+	double CorrelResult2 = calculateCORREL(a2, a3, 52);
+
+	*ideal = AB_recupSans();
+	for (int i = 0; i < 52; i++)
+	{
+		a3[i] = ideal[2 * i + 1];
+	}
+	double CorrelResult3 = calculateCORREL(a2, a3, 52);
+
+	*ideal = AS_reposSans();
+	for (int i = 0; i < 52; i++)
+	{
+		a3[i] = ideal[2 * i + 1];
+	}
+	double CorrelResult4 = calculateCORREL(a2, a3, 52);
+
+	*ideal = JF_effort_sans();
+	for (int i = 0; i < 52; i++)
+	{
+		a3[i] = ideal[2 * i + 1];
+	}
+	double CorrelResult5 = calculateCORREL(a2, a3, 52);
+
+	*ideal = JF_repos_sans();
+	for (int i = 0; i < 52; i++)
+	{
+		a3[i] = ideal[2 * i + 1];
+	}
+	double CorrelResult6 = calculateCORREL(a2, a3, 52);
+
+
+	////Insert reaction here
+	//if (CorrelResult >= 0.7)
+	//{
+	//	printf("High correlation coefficient with ,  Correlation cofficient is: %s\n",CorrelResult);
+	//}
 
 
 	//Display result of processed data
