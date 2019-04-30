@@ -10,25 +10,25 @@ HANDLE InitCOM(LPCTSTR Port)
 {
 	HANDLE hCom = INVALID_HANDLE_VALUE;
 	hCom = CreateFile(Port, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
-		0/*同步方式打开串口*/, NULL);
+		0/*0 stands for Synchronized method*/, NULL);
 	if (INVALID_HANDLE_VALUE == hCom)
 	{
 		return INVALID_HANDLE_VALUE;
 	}
-	SetupComm(hCom, 4096, 4096);//设置缓存
+	SetupComm(hCom, 4096, 4096);//Set buffer area
 
 	DCB dcb;
 
-	GetCommState(hCom, &dcb);//设置串口
+	GetCommState(hCom, &dcb);//set COM port
 	dcb.DCBlength = sizeof(dcb);
 	dcb.BaudRate = 9600;
 	dcb.StopBits = ONESTOPBIT;
 	SetCommState(hCom, &dcb);
 
-	PurgeComm(hCom, PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR | PURGE_TXABORT);//清空缓存
+	PurgeComm(hCom, PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR | PURGE_TXABORT);//Buffer clearance
 
 	COMMTIMEOUTS ct;
-	//设置读取超时时间，及ReadFlie最长等待时间
+	//Set timeout and the longest time Readfile accepts
 	ct.ReadIntervalTimeout = 0;
 	ct.ReadTotalTimeoutConstant = 500;
 	ct.ReadTotalTimeoutMultiplier = 50;
@@ -36,7 +36,7 @@ HANDLE InitCOM(LPCTSTR Port)
 	ct.WriteTotalTimeoutMultiplier = 50;
 	ct.WriteTotalTimeoutConstant = 5;
 
-	SetCommTimeouts(hCom, &ct);//设置超时
+	SetCommTimeouts(hCom, &ct);//set timeout
 
 	return hCom;
 }
@@ -47,21 +47,21 @@ bool ComRead(HANDLE hCom, unsigned char buf[16], int len)
 	DWORD ReadSize = 0;
 	BOOL rtn = FALSE;
 
-	//设置读取1个字节数据，当缓存中有数据到达时则会立即返回，否则直到超时
+	//Read 1 bit data，data would be returned once buffer has data，otherwise wait until the timeout.
 	rtn = ReadFile(hCom, buf, 1, &ReadSize, NULL);
 
-	//如果是超时rtn=true但是ReadSize=0，如果有数据到达，会读取一个字节ReadSize=1
+	//rtn=true if timeout & ReadSize=0，if there's data coming，ReadSize=1
 	if (rtn == TRUE && 1 == ReadSize)
 	{
 		DWORD Error;
 		COMSTAT cs = { 0 };
 		int ReadLen = 0;
-		//查询剩余多少字节未读取，存储于cs.cbInQue中
+		//Check how much data needs to be read，store it into cs.cbInQue
 		ClearCommError(hCom, &Error, &cs);
 		ReadLen = (cs.cbInQue > len) ? len : cs.cbInQue;
 		if (ReadLen > 0)
 		{
-			//由于之前等待时以读取一个字节，故buf+1
+			//buf+1 since 1 bit was read during waiting
 			rtn = ReadFile(hCom, buf + 1, ReadLen, &ReadSize, NULL);
 			len = 0;
 			if (rtn)
