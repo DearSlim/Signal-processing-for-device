@@ -283,7 +283,7 @@ double * Variaresp_AB_frequency()
 return f;
 }
 //Collected data for calculation of correlation coefficient, corresponding frequency ranges from 0-1hz
-double * AS_recupEffort()
+double * AS_Effort_Sans()
 {
 	double * testArray = (double *)calloc(104, sizeof(double));
 	double f[104] = { 4.07388230519528,

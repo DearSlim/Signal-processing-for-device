@@ -41,7 +41,7 @@ col mul(col a, col b)
 
 int FFT()
 {
-	//奇偶分组，x1存储奇数位，x2存储偶数位
+	//x1 for odd, x2 for even
 	col x1[32], x2[32];
 	col y, z;
 	y.real = 0; y.img = 0;
@@ -68,7 +68,6 @@ int FFT()
 			x[i] = add(x1[i], x2[i]);
 			printf("%f+j%f\n", x[i].real, x[i].img);
 		}
-		//printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
 		for (int i = 32; i < N; i++)
 		{
 			//printf("real:%f---img:%f\n", x1[i - 32].real, x1[i - 32].img);
@@ -129,9 +128,9 @@ double * reverse1(double original[], int length)
 		while (k <= j)                 //If k<=j,mark the highest position as 1   
 		{
 			j = j - k;                 //Change the highest position into 0
-			k = k / 2;                 //k/2，比较次高位，依次类推，逐个比较，直到某个位为0
+			k = k / 2;                 
 		}
-		j = j + k;                     //把0改为1
+		j = j + k;                     //Change 0 to 1
 	}
 	for (int p = 0; p < 64; p++)
 	{
@@ -218,21 +217,21 @@ int FFT2()
 	//printf("%d\n", sizeof(x));
 	col xtemp[64];
 	reverse(64);
-	//计算第一级的2点DFT
+	//First level 2-point DFT
 	dft();
-	//设置一个相同大小的数组用于存放x[]原始数据
+	//Set an array to store the original data
 	for (int i = 0; i < 64; i++)
 	{
 		xtemp[i] = x[i];
 	}
-	//一共log2N级运算
+	//log2N level of calculation
 	int mark[64];
 	for (int m = 1; m < log2N; m++)
 	{
 		reset(mark, 64, 1);
-		//记录每级蝶形的旋转因子变化周期，第L级运算周期为L；
+		//Mark the loop of twiddle factor，the period of n-level is 2^n；
 		int markLoop = 0;
-		//节点距离
+		//Distance between nodes
 		int distance = pow(2, m);
 		for (int p = 0; p < 64; p++)
 		{
@@ -418,52 +417,62 @@ int FFT3(double value[], int length)
 	/**Correlation coefficient calculation,
 	if the signal wave shows a correlation coefficient with the monitored signal of 0.7 or larger, 
 	a warning message would occur.**/
-	double * ideal = Variaresp_AB_effort();
+	/*for (int i = 0; i < 104; i++)
+	{
+		printf("%f\n", ideal1[i]);
+	}*/
 	double * amplitude1 = processAmp(amplitude, length);
 	double a2[52];
 	double a3[52];
+
+	double * ideal1 = AS_Effort_Sans();
 	for (int i = 0; i < 52; i++)
 	{
 		a2[i] = amplitude1[i];
-		a3[i] = ideal[2 * i + 1];
+		a3[i] = ideal1[2 * i + 1];
 	}
-	double CorrelResult1 = calculateCORREL(a2,a3,52);
+	double * CorrelResult1 = calculateCORREL(a2,a3,52);
+	printf("The correlation coefficient with Variaresp_AB_effort is: %f\n", *CorrelResult1);
 
-	*ideal = AS_recupEffort();
+	//*ideal = AS_recupEffort();
+	//for (int i = 0; i < 52; i++)
+	//{
+	//	a3[i] = ideal[2 * i + 1];
+	//}
+	//double CorrelResult2 = calculateCORREL(a2, a3, 52);
+	//printf("The correlation coefficient with AS_recupEffort is: %f\n", CorrelResult2);
+
+	double *ideal3 = AB_recupSans();
 	for (int i = 0; i < 52; i++)
 	{
-		a3[i] = ideal[2 * i + 1];
+		a3[i] = ideal3[2 * i + 1];
 	}
-	double CorrelResult2 = calculateCORREL(a2, a3, 52);
+	double * CorrelResult3 = calculateCORREL(a2, a3, 52);
+	printf("The correlation coefficient with AB_recupSans is: %f\n", *CorrelResult3);
 
-	*ideal = AB_recupSans();
+	double *ideal4 = AS_reposSans();
 	for (int i = 0; i < 52; i++)
 	{
-		a3[i] = ideal[2 * i + 1];
+		a3[i] = ideal4[2 * i + 1];
 	}
-	double CorrelResult3 = calculateCORREL(a2, a3, 52);
+	double * CorrelResult4 = calculateCORREL(a2, a3, 52);
+	printf("The correlation coefficient with AS_reposSans is: %f\n", *CorrelResult4);
 
-	*ideal = AS_reposSans();
+	double *ideal5 = JF_effort_sans();
 	for (int i = 0; i < 52; i++)
 	{
-		a3[i] = ideal[2 * i + 1];
+		a3[i] = ideal5[2 * i + 1];
 	}
-	double CorrelResult4 = calculateCORREL(a2, a3, 52);
+	double * CorrelResult5 = calculateCORREL(a2, a3, 52);
+	printf("The correlation coefficient with JF_effort_sans is: %f\n", *CorrelResult5);
 
-	*ideal = JF_effort_sans();
+	double *ideal6 = JF_repos_sans();
 	for (int i = 0; i < 52; i++)
 	{
-		a3[i] = ideal[2 * i + 1];
+		a3[i] = ideal6[2 * i + 1];
 	}
-	double CorrelResult5 = calculateCORREL(a2, a3, 52);
-
-	*ideal = JF_repos_sans();
-	for (int i = 0; i < 52; i++)
-	{
-		a3[i] = ideal[2 * i + 1];
-	}
-	double CorrelResult6 = calculateCORREL(a2, a3, 52);
-
+	double * CorrelResult6 = calculateCORREL(a2, a3, 52);
+	printf("The correlation coefficient with JF_repos_sans is: %f\n", *CorrelResult6);
 
 	////Insert reaction here
 	//if (CorrelResult >= 0.7)
@@ -487,7 +496,7 @@ int FFT3(double value[], int length)
 
 	//Release resourse
 	free(mark);
-	free(ideal);
+	//free(ideal);
 	free(amplitude1);
 	free(frequency);
 	free(amplitude);
@@ -495,7 +504,7 @@ int FFT3(double value[], int length)
 	free(xtemp);
 	free(fftResult);
 	mark = NULL;
-	ideal = NULL;
+	//ideal = NULL;
 	frequency = NULL;
 	amplitude = NULL;
 	amplitude1 = NULL;

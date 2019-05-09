@@ -60,8 +60,9 @@ double * adapt_to_data(double data[], double f1[], double f2[], int length1, int
 }
 
 //Calculate the coerelation coefficient of two series
-double calculateCORREL(double real[], double ideal[], int length)
+double * calculateCORREL(double real[], double ideal[], int length)
 {
+
 	double avgReal = calculateAVG(real,length);
 	double avgIdeal = calculateAVG(ideal, length);
 	double a,b,c;
@@ -75,7 +76,7 @@ double calculateCORREL(double real[], double ideal[], int length)
 	b = sqrt(b*c);
 	double CORREL = fabs(a / b);
 	printf("The correlation coefficient is: %f\n", CORREL);
-	return CORREL;
+	return &CORREL;
 }
 
 //Dynamic monitor for data
